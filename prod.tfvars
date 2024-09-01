@@ -1,3 +1,3 @@
 bucket_name="sunnyyllkk"
-Name="vpcT"
+Name="prod-vpc"
 cidr= "0.0.0.0/0"

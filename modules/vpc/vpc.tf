@@ -47,3 +47,26 @@ resource "aws_security_group" "sg" {
   }
 }
 
+
+variable "vpc_id" {
+  type = string
+  default = "vpc-0070b953c7a0c15fa"
+}
+
+data "aws_vpc" "subnet_data" {
+  filter {
+    name = "tag:Name"
+    values = [ "main" ]
+  }
+}
+
+resource "aws_subnet" "subnet_data" {
+  cidr_block = cidrsubnet(data.aws_vpc.subnet_data.cidr_block, 4, 2)
+  vpc_id = data.aws_vpc.subnet_data.id
+
+  tags = {
+    Name = "Subnet_data"
+    availability_zone = "us-east-1"
+
+  } 
+}
