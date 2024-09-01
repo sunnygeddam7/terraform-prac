@@ -1,0 +1,68 @@
+properties([
+    parameters([
+        string(
+            defaultValue: 'dev',
+            name: 'Environment'
+        ),
+        choice(
+            choices: ['plan', 'apply', 'destroy'], 
+            name: 'Terraform_Action'
+        )])
+])
+
+//pipeline
+pipeline {
+    agent {
+        label 'terra-slave'
+    }
+
+    stages {
+        stage('checkout') {
+            steps {
+                git 'https://github.com/sunnygeddam7/terraform-prac.git'
+            }
+        }
+
+        stage('init') {
+            steps {
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('plan') {
+            steps {
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh 'terraform plan'
+                }
+            }
+        }
+
+        stage('validate') {
+            steps {
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Action') {
+            steps {
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    script {
+                        if (params.Terraform_Action == 'plan') {
+                            sh "terraform plan -var-file=${params.Environment}.tfvars"
+                        } else if (params.Terraform_Action == 'apply') {
+                            sh "terraform apply -var-file=${params.Environment}.tfvars -auto-approve"
+                        } else if (params.Terraform_Action == 'destroy') {
+                            sh "terraform destroy -var-file=${params.Environment}.tfvars -auto-approve"
+                        } else {
+                            error "Invalid value for Terraform_Action: ${params.Terraform_Action}"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
